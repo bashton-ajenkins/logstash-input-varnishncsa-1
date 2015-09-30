@@ -1,0 +1,4 @@
+Copyright 2012-2015 Vitaly Gorodetsky and Gavin Hamill
+
+This product includes software developed by The Apache Software
+Foundation (http://www.apache.org/).
