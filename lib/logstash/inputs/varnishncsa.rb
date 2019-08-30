@@ -18,7 +18,6 @@ class LogStash::Inputs::Varnishncsa < LogStash::Inputs::Base
   "varnish_handling":"%{Varnish:handling}x"}'
 
   config_name "varnishncsa"
-  milestone 1
 
   default :codec, "json"
 
@@ -35,11 +34,11 @@ class LogStash::Inputs::Varnishncsa < LogStash::Inputs::Base
   #     "varnish_time_firstbyte":"%{Varnish:time_firstbyte}x","varnish_hitmiss":"%{Varnish:hitmiss}x",
   #     "varnish_handling":"%{Varnish:handling}x"}'
   #
-  #   or put whatever format you like that suppoted by varnishncsa:
+  #   or put whatever format you like that supported by varnishncsa:
   #   https://www.varnish-cache.org/docs/3.0/reference/varnishncsa.html
   #
   config :format, :validate => :string, :required => true, :default => 'default'
-  
+
   public
   def register
     @logger.info("Registering varnishncsa input", :format => @format)
@@ -51,7 +50,8 @@ class LogStash::Inputs::Varnishncsa < LogStash::Inputs::Base
               end
 
     command = "varnishncsa -F '#{@format}'"
-    @pipe = IO.popen(command, mode="r")
+    @pipe = IO.popen(command, mode="r", :external_encoding=>"UTF-8")
+    @hostname = Socket.gethostname
   end # def register
 
   def teardown
@@ -61,11 +61,11 @@ class LogStash::Inputs::Varnishncsa < LogStash::Inputs::Base
   def run(queue)
     loop do
       begin
-        hostname = Socket.gethostname
         @pipe.each do |line|
           @codec.decode(line) do |event|
-            event["source_host"] = hostname
             decorate(event)
+            event.set("source_host", @hostname)
+            @logger.info("Logging event: ", :event => event)
             queue << event
           end
         end
